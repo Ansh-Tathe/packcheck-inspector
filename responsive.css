@@ -67,10 +67,37 @@ img, svg, video, canvas, embed, object, iframe {
   #navUserInfo {
     display: none !important;
   }
-  /* Primary CTA: shrink text slightly so it fits */
+  /* Primary CTA: shrink text slightly so it fits, min 44px touch height */
   #btnNavScan {
     font-size: 0.82rem;
     padding: 10px 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Universal touch target minimum (WCAG 2.5.5) */
+  button,
+  .btn-cta-primary,
+  .btn-cta-secondary,
+  .hero-btn-solid,
+  .hero-btn-outline,
+  .preset-pill-btn,
+  .modal-close-btn,
+  .substance-tab-btn,
+  .role-switch-btn,
+  .ind-header-scan-btn,
+  .insp-action-btn,
+  .portal-tab,
+  .auth-mode-btn,
+  .login-submit-btn,
+  .btn-back-to-top,
+  .mobile-nav-link {
+    min-height: 44px;
+  }
+  .modal-close-btn {
+    min-width: 44px;
   }
 }
 
@@ -219,19 +246,35 @@ img, svg, video, canvas, embed, object, iframe {
 }
 
 /* ==========================================================================
-   5. HOW-IT-WORKS STEPS GRID — already collapses at 1024
+   5. HOW-IT-WORKS STEPS GRID
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .steps-grid {
+    flex-direction: column !important;
+    width: 100%;
+  }
   .step-block {
-    padding: 40px 24px;
+    border-right: none !important;
+    border-bottom: var(--border-heavy) !important;
+    width: 100%;
+  }
+  .step-block:last-child {
+    border-bottom: none !important;
   }
 }
+
+@media (max-width: 768px) {
+  .step-block {
+    padding: clamp(28px, 5vw, 40px) clamp(16px, 4vw, 24px);
+  }
+}
+
 @media (max-width: 480px) {
   .step-block {
-    padding: 32px 16px;
+    padding: 24px 16px;
   }
   .step-title {
-    font-size: 1.5rem;
+    font-size: clamp(1.35rem, 6vw, 1.8rem);
   }
 }
 
@@ -393,17 +436,54 @@ img, svg, video, canvas, embed, object, iframe {
 /* ==========================================================================
    11. PROOF SECTION (FRONT vs BACK)
    ========================================================================== */
+@media (max-width: 900px) {
+  .proof-card-row {
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+  .proof-claim-block {
+    border-right: none !important;
+    border-bottom: var(--border-heavy) !important;
+    padding: clamp(28px, 5vw, 48px) clamp(16px, 4vw, 36px);
+  }
+  .proof-versus {
+    width: 100% !important;
+    flex-direction: row !important;
+    height: auto !important;
+    min-height: 52px;
+    padding: 12px 20px !important;
+    border-bottom: var(--border-heavy) !important;
+  }
+  .versus-line {
+    flex: 1;
+    width: auto !important;
+    height: 2px !important;
+    min-height: 0 !important;
+  }
+  .proof-findings-block {
+    padding: clamp(28px, 5vw, 48px) clamp(16px, 4vw, 36px);
+  }
+  .proof-cta-row {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+}
+
 @media (max-width: 480px) {
   .proof-claim-block,
   .proof-findings-block {
-    padding: 28px 16px;
+    padding: 24px 16px;
   }
   .proof-claim-quote {
-    font-size: 1.6rem;
+    font-size: clamp(1.4rem, 6vw, 1.8rem);
   }
   .proof-cta-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+  }
+  .proof-cta-row .btn-cta-primary {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -491,29 +571,62 @@ img, svg, video, canvas, embed, object, iframe {
    ========================================================================== */
 
 /* Top bar: stack on narrow screens */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .dash-top-bar {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: stretch !important;
+    gap: 14px;
     padding: 14px 16px;
+  }
+  .dash-top-bar > div {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 10px;
+    justify-content: flex-start;
+  }
+  .dash-top-bar button {
+    flex: 1 1 140px;
+    text-align: center;
+    justify-content: center;
+    min-height: 44px;
   }
   .dash-container {
     padding: 0 16px;
     margin-top: 20px;
-    gap: 16px;
+    gap: 20px;
   }
 }
 
-/* Product hero card: already collapses at 1024, add mobile padding */
-@media (max-width: 480px) {
+/* Product hero card: responsive 1-col on mobile */
+@media (max-width: 768px) {
   .product-health-hero {
-    padding: 18px 16px;
-    gap: 18px;
+    grid-template-columns: 1fr !important;
+    text-align: left;
+    padding: clamp(18px, 4vw, 28px) clamp(16px, 4vw, 24px);
+    gap: 20px;
+  }
+  .product-pack-visual-box {
+    margin: 0 auto;
+    width: 100px;
+    height: 120px;
   }
   .product-main-title {
-    font-size: 1.6rem;
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
   }
+  .cleanscore-gauge-wrap {
+    border-left: none !important;
+    border-top: var(--border-med) !important;
+    padding-left: 0 !important;
+    padding-top: 20px !important;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+@media (max-width: 480px) {
   .product-pack-visual-box {
     width: 80px;
     height: 100px;
@@ -524,6 +637,48 @@ img, svg, video, canvas, embed, object, iframe {
   }
   .score-large-number {
     font-size: 1.6rem;
+  }
+}
+
+/* Jev card & dossier reflow */
+@media (max-width: 768px) {
+  .jev-card {
+    padding: 20px 16px;
+  }
+  .jev-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .jev-profile-pill-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .jev-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+  .consumer-dossier-grid {
+    grid-template-columns: 1fr !important;
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .jev-levels-row {
+    grid-template-columns: 1fr !important;
+  }
+  .dossier-card {
+    padding: 14px 12px;
+  }
+  .dossier-kv-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .dossier-kv-value {
+    text-align: left;
   }
 }
 
@@ -540,7 +695,38 @@ img, svg, video, canvas, embed, object, iframe {
   }
 }
 
-/* Substance card main row: stack on tiny screens */
+/* Substance card main row & filter header */
+@media (max-width: 768px) {
+  .substances-filter-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .substances-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+  .substance-tab-btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+  }
+  .substances-search-box {
+    width: 100%;
+    min-height: 44px;
+  }
+  .substances-search-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 38px;
+  }
+}
+
 @media (max-width: 480px) {
   .substance-card-main {
     flex-wrap: wrap;
@@ -549,26 +735,12 @@ img, svg, video, canvas, embed, object, iframe {
   .substance-name {
     font-size: 0.95rem;
   }
-  /* Drawer grid: already 1-col at 768 via existing rule */
-  .substances-filter-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .substances-tabs {
-    flex-wrap: wrap;
-  }
-  .substances-search-box {
-    width: 100%;
-  }
-  .substances-search-input {
-    flex: 1;
-    min-width: 0;
-  }
 }
 
 /* Substance card touch target */
 .substance-tab-btn {
-  min-height: 36px;
+  min-height: 44px;
+  min-width: 44px;
 }
 
 /* Swap item card: stack on mobile */
@@ -576,8 +748,13 @@ img, svg, video, canvas, embed, object, iframe {
   .swap-item-card {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-    padding: 12px 14px;
+    gap: 10px;
+    padding: 14px 14px;
+  }
+  .swap-item-card button {
+    min-height: 44px;
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -740,10 +917,13 @@ img, svg, video, canvas, embed, object, iframe {
 @media (max-width: 768px) {
   .ind-header {
     flex-wrap: wrap;
-    height: auto;
+    height: auto !important;
     min-height: 56px;
-    padding: 10px 16px;
+    padding: 10px 14px !important;
     gap: 10px;
+  }
+  .ind-header-left {
+    flex: 1 1 auto;
   }
   .ind-header-center {
     display: none;
@@ -751,16 +931,35 @@ img, svg, video, canvas, embed, object, iframe {
   .ind-header-right {
     flex-wrap: wrap;
     gap: 8px;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .role-switch-wrap {
+    display: flex !important;
+    width: 100%;
+  }
+  .role-switch-btn {
+    flex: 1;
+    min-height: 44px;
+    text-align: center;
+    justify-content: center;
+  }
+  .ind-header-scan-btn {
+    min-height: 44px;
+    padding: 8px 14px;
   }
 }
 
 /* Inspector action buttons: full width on tiny screens */
 @media (max-width: 480px) {
   .insp-action-row {
-    flex-direction: column;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
   .insp-action-btn {
     width: 100%;
+    min-height: 44px;
   }
   .ind-header {
     padding: 10px 12px;
@@ -769,10 +968,12 @@ img, svg, video, canvas, embed, object, iframe {
   .role-switch-wrap {
     order: 3;
     width: 100%;
+    display: flex !important;
   }
   .role-switch-btn {
     flex: 1;
     text-align: center;
+    min-height: 44px;
   }
 }
 
@@ -789,27 +990,37 @@ img, svg, video, canvas, embed, object, iframe {
   .login-right {
     min-height: 100dvh;
     min-height: 100vh;
-    padding: 40px 28px;
+    padding: 40px 24px;
+  }
+  .login-mobile-brand {
+    display: flex !important;
+    margin-bottom: 20px;
   }
 }
 
 @media (max-width: 480px) {
   .login-right {
-    padding: 32px 16px;
+    padding: 28px 16px;
   }
   .portal-tab {
     padding: 12px 8px;
     font-size: 0.8rem;
+    min-height: 44px;
   }
   .portal-switcher {
     box-shadow: 3px 3px 0 var(--ink);
   }
   .login-submit-btn {
     padding: 14px 20px;
+    min-height: 48px;
   }
   .role-pill {
-    padding: 8px 6px;
-    font-size: 0.66rem;
+    padding: 10px 8px;
+    font-size: 0.72rem;
+    min-height: 44px;
+  }
+  .auth-mode-btn {
+    min-height: 44px;
   }
 }
 

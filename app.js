@@ -2010,6 +2010,8 @@ function initSmoothScroll() {
         orientation: "vertical",
         gestureOrientation: "vertical",
         smoothWheel: true,
+        touchMultiplier: 1.5,
+        syncTouch: true,
       });
 
       if (typeof gsap !== "undefined" && typeof ScrollTrigger !== "undefined") {
@@ -2313,18 +2315,22 @@ function initScrollAnimations() {
   // ========================================================================
   const stackCards = document.querySelectorAll(".stack-card");
   if (stackCards.length > 1) {
-    stackCards.forEach((card, i) => {
-      if (i < stackCards.length - 1) {
-        ScrollTrigger.create({
-          trigger: stackCards[i + 1],
-          start: "top 220px",
-          end: "top 120px",
-          scrub: true,
-          onUpdate: (self) => {
-            const scale = 1 - (self.progress * 0.04);
-            const brightness = 1 - (self.progress * 0.14);
-            card.style.transform = `scale(${scale})`;
-            card.style.filter = `brightness(${brightness})`;
+    ScrollTrigger.matchMedia({
+      "(min-width: 769px)": function () {
+        stackCards.forEach((card, i) => {
+          if (i < stackCards.length - 1) {
+            ScrollTrigger.create({
+              trigger: stackCards[i + 1],
+              start: "top 220px",
+              end: "top 120px",
+              scrub: true,
+              onUpdate: (self) => {
+                const scale = 1 - (self.progress * 0.04);
+                const brightness = 1 - (self.progress * 0.14);
+                card.style.transform = `scale(${scale})`;
+                card.style.filter = `brightness(${brightness})`;
+              }
+            });
           }
         });
       }
@@ -2339,37 +2345,46 @@ function initScrollAnimations() {
   const railLaserDot = document.querySelector(".rail-laser-dot");
 
   if (conveyorSection && conveyorBelt) {
-    // Only pin horizontally on desktop screens
-    const isDesktop = window.innerWidth > 768;
-    if (isDesktop) {
-      const scrollDist = conveyorBelt.scrollWidth - window.innerWidth + 120;
-      
-      gsap.to(conveyorBelt, {
-        x: -scrollDist,
-        ease: "none",
-        scrollTrigger: {
-          trigger: conveyorSection,
-          pin: true,
-          start: "top top",
-          end: () => `+=${Math.max(scrollDist, 1800)}`,
-          scrub: 0.8,
-          invalidateOnRefresh: true
-        }
-      });
-
-      if (railLaserDot) {
-        gsap.to(railLaserDot, {
-          left: "90%",
+    // Only pin and animate horizontally on desktop viewports (>768px)
+    ScrollTrigger.matchMedia({
+      "(min-width: 769px)": function () {
+        const scrollDist = conveyorBelt.scrollWidth - window.innerWidth + 120;
+        
+        const beltTween = gsap.to(conveyorBelt, {
+          x: -scrollDist,
           ease: "none",
           scrollTrigger: {
             trigger: conveyorSection,
+            pin: true,
             start: "top top",
             end: () => `+=${Math.max(scrollDist, 1800)}`,
-            scrub: 0.8
+            scrub: 0.8,
+            invalidateOnRefresh: true
           }
         });
+
+        if (railLaserDot) {
+          gsap.to(railLaserDot, {
+            left: "90%",
+            ease: "none",
+            scrollTrigger: {
+              trigger: conveyorSection,
+              start: "top top",
+              end: () => `+=${Math.max(scrollDist, 1800)}`,
+              scrub: 0.8
+            }
+          });
+        }
+
+        return function () {
+          // Cleanup on breakpoint exit (mobile/portrait tablet)
+          if (beltTween && beltTween.scrollTrigger) {
+            beltTween.scrollTrigger.kill();
+          }
+          gsap.set(conveyorBelt, { clearProps: "transform,x" });
+        };
       }
-    }
+    });
   }
 
   // ========================================================================
