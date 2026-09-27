@@ -3187,7 +3187,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (loginBtn) loginBtn.style.display = 'inline-flex';
         if (userInfoEl) userInfoEl.style.display = 'none';
 
-        if (mobileLoginBtn) mobileLoginBtn.style.display = 'block';
+        if (mobileLoginBtn) mobileLoginBtn.style.display = 'flex';
         if (mobileSessionRow) mobileSessionRow.style.display = 'none';
       }
     } catch(_) {}

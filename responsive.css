@@ -55,26 +55,101 @@ img, svg, video, canvas, embed, object, iframe {
   min-height: 44px;
 }
 
-/* Nav links hidden below 768 — hamburger shown */
+/* Nav links hidden below 768 — hamburger and mobile Sign In shown */
 @media (max-width: 768px) {
+  .site-nav {
+    padding: 0 16px !important;
+    gap: 12px;
+  }
+  .brand-subline {
+    display: none !important;
+  }
+  .nav-brand {
+    flex-shrink: 0;
+  }
+  .brand-stamp {
+    font-size: 1.15rem;
+    padding: 6px 10px;
+  }
   .nav-links-menu {
     display: none !important;
   }
-  .btn-mobile-nav-toggle {
+  .nav-actions {
     display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
   }
-  /* Hide secondary session controls from nav; they appear in mobile drawer */
-  #navUserInfo {
+  /* On mobile <768px, hide the bulky 'SCAN A PACKAGE' header CTA so the navbar never overflows */
+  #btnNavScan {
     display: none !important;
   }
-  /* Primary CTA: shrink text slightly so it fits, min 44px touch height */
-  #btnNavScan {
-    font-size: 0.82rem;
-    padding: 10px 14px;
+  /* Prominently show SIGN IN button in the mobile navbar */
+  #btnNavLogin {
+    display: inline-flex !important;
+    padding: 8px 13px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    min-height: 44px;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    border: var(--border-med);
+    background: var(--paper-surface);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  /* Show session controls if authenticated */
+  #navUserName {
+    display: none !important;
+  }
+  #navUserInfo {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+  }
+  #btnNavLogout {
+    padding: 8px 12px;
+    font-size: 0.75rem;
     min-height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Hamburger toggle: guaranteed 44×44px, high-contrast brutalist icon */
+  .btn-mobile-nav-toggle {
+    display: flex !important;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    border: var(--border-heavy);
+    background: var(--paper-surface);
+    box-shadow: 2px 2px 0 var(--ink);
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+    z-index: 510;
+  }
+  .hamburger-line {
+    width: 22px;
+    height: 2px;
+    background: var(--ink);
+    display: block;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  .btn-mobile-nav-toggle[aria-expanded="true"] .hamburger-line:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  .btn-mobile-nav-toggle[aria-expanded="true"] .hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+  .btn-mobile-nav-toggle[aria-expanded="true"] .hamburger-line:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
   }
 
   /* Universal touch target minimum (WCAG 2.5.5) */
