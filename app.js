@@ -1045,14 +1045,31 @@ async function onBarcodeDetected(barcodeText) {
   }
 }
 
+function getAppApiBaseUrl() {
+  if (typeof window !== "undefined" && window.PackCheckAPI && window.PackCheckAPI.baseURL) {
+    return window.PackCheckAPI.baseURL;
+  }
+  try {
+    const saved = localStorage.getItem("packcheck_api_url");
+    if (saved) return saved.replace(/\/+$/, "");
+  } catch (_) {}
+  if (typeof window !== "undefined" && window.location) {
+    const h = window.location.hostname;
+    if (h === "localhost" || h === "127.0.0.1") return "http://localhost:8000";
+    if (/^192\.168\./.test(h) || /^10\./.test(h) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return `http://${h}:8000`;
+  }
+  return "https://packcheck-backend.onrender.com";
+}
+
 async function fetchProductByBarcode(barcode) {
   let scanData = null;
   let analysis = null;
   let productData = null;
+  const apiBase = getAppApiBaseUrl();
 
   // 1. Primary hook: Call PackCheck full scan pipeline (Product + Rule Engine + Jev AI + Alternatives)
   try {
-    const scanRes = await fetch("http://localhost:8000/api/scan", {
+    const scanRes = await fetch(`${apiBase}/api/scan`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ barcode: barcode.trim(), device_info: "consumer-browser" })
@@ -1066,31 +1083,86 @@ async function fetchProductByBarcode(barcode) {
   }
 
   // 2. Secondary hook: Retrieve full ingredient classifications if needed
-  try {
-    const analyzeRes = await fetch(`http://localhost:8000/api/analyze/${encodeURIComponent(barcode.trim())}`, { method: "POST" });
-    if (analyzeRes.ok) {
-      analysis = await analyzeRes.json();
-      if (!productData && analysis) {
-        productData = {
-          barcode: barcode,
-          product: { name: analysis.product_name, category: "Barcode Scan" },
-          nutrition: {},
-          ingredients: []
-        };
+  if (!productData) {
+    try {
+      const analyzeRes = await fetch(`${apiBase}/api/analyze/${encodeURIComponent(barcode.trim())}`, { method: "POST" });
+      if (analyzeRes.ok) {
+        analysis = await analyzeRes.json();
+        if (!productData && analysis) {
+          productData = {
+            barcode: barcode,
+            product: { name: analysis.product_name, category: "Barcode Scan" },
+            nutrition: {},
+            ingredients: []
+          };
+        }
       }
+    } catch (err) {
+      console.warn("Analyze endpoint lookup note:", err);
     }
-  } catch (err) {
-    console.warn("Analyze endpoint lookup note:", err);
   }
 
-  // If scan endpoint failed and analyze endpoint failed, try direct products lookup
-  if (!scanData && !analysis) {
+  // 3. Resilient Fallback: Directly query Open Food Facts API (Worldwide database with CORS enabled)
+  if (!productData) {
     try {
-      const prodRes = await fetch(`http://localhost:8000/api/products/${encodeURIComponent(barcode.trim())}`);
-      if (prodRes.ok) {
-        productData = await prodRes.json();
+      const offRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode.trim())}.json`);
+      if (offRes.ok) {
+        const offJson = await offRes.json();
+        if (offJson.status === 1 && offJson.product) {
+          const p = offJson.product;
+          const nutriments = p.nutriments || {};
+          const sugars = Number(nutriments.sugars_100g ?? nutriments.sugars ?? 0);
+          const satFat = Number(nutriments["saturated-fat_100g"] ?? nutriments.saturated_fat ?? 0);
+          const sodium = Number(nutriments.sodium_100g ?? nutriments.sodium ?? 0);
+          const energy = Number(nutriments["energy-kcal_100g"] ?? nutriments.energy_kcal ?? 0);
+          const protein = Number(nutriments.proteins_100g ?? nutriments.proteins ?? 0);
+          const fiber = Number(nutriments.fiber_100g ?? nutriments.fiber ?? 0);
+
+          // Calculate CleanScore
+          let score = 88;
+          const flags = [];
+          if (sugars > 18) { score -= 30; flags.push("HIGH_SUGAR"); }
+          else if (sugars > 8) { score -= 15; flags.push("MODERATE_SUGAR"); }
+          if (satFat > 5) { score -= 15; flags.push("HIGH_SATURATED_FAT"); }
+          if (sodium > 0.5) { score -= 15; flags.push("HIGH_SODIUM"); }
+          score = Math.max(15, Math.min(99, Math.round(score)));
+
+          const ingredientsList = p.ingredients_text
+            ? p.ingredients_text.split(/[,;\n]/).map(s => s.trim()).filter(Boolean)
+            : [];
+
+          productData = {
+            barcode: barcode.trim(),
+            product: {
+              name: p.product_name || p.product_name_en || "Scanned Food Product",
+              brand: p.brands || "Brand",
+              category: p.categories ? p.categories.split(",")[0].trim() : "Packaged Food",
+              image: p.image_url || p.image_front_url || null
+            },
+            nutrition: {
+              energy_kcal: energy,
+              sugars: sugars,
+              fat: Number(nutriments.fat_100g ?? nutriments.fat ?? 0),
+              saturated_fat: satFat,
+              sodium: sodium,
+              protein: protein,
+              fiber: fiber
+            },
+            ingredients: ingredientsList
+          };
+
+          analysis = {
+            product_name: productData.product.name,
+            clean_score: score,
+            nutritional_score: score,
+            flags: flags,
+            recommendations: []
+          };
+        }
       }
-    } catch (_) {}
+    } catch (offErr) {
+      console.warn("Direct Open Food Facts fallback error:", offErr);
+    }
   }
 
   if (!scanData && !analysis && !productData) {
@@ -2804,7 +2876,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   if (fileInput) {
     fileInput.addEventListener("change", async (e) => {
-      if (!e.target.files || !e.target.files[0]) return;
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
 
       // Show loading state
       const cameraState = document.getElementById("scanCameraState");
@@ -2815,18 +2888,59 @@ document.addEventListener("DOMContentLoaded", () => {
       if (laserState) laserState.style.display = "block";
 
       const ticker = document.getElementById("scanProgressTickerText");
-      if (ticker) ticker.textContent = "Uploading image and reading barcode / label...";
+      if (ticker) ticker.textContent = "Scanning photo for barcode...";
 
+      // STEP 1: Attempt instant client-side barcode decoding directly with ZXing
+      let decodedBarcode = null;
+      try {
+        const reader = getCodeReader();
+        if (reader) {
+          const objectUrl = URL.createObjectURL(file);
+          const img = new Image();
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = objectUrl;
+          });
+          try {
+            const zxResult = await reader.decodeFromImageElement(img);
+            if (zxResult && zxResult.getText()) {
+              decodedBarcode = zxResult.getText().trim();
+            }
+          } catch (_) {
+            // No 1D barcode detected directly by image decoder, will try OCR
+          } finally {
+            URL.revokeObjectURL(objectUrl);
+          }
+        }
+      } catch (clientErr) {
+        console.warn("Client-side image barcode detection note:", clientErr);
+      }
+
+      if (decodedBarcode) {
+        if (ticker) ticker.textContent = `✓ Barcode detected in image: ${decodedBarcode}. Fetching product...`;
+        try {
+          await fetchProductByBarcode(decodedBarcode);
+        } catch (fetchErr) {
+          console.error("Lookup error for detected barcode:", fetchErr);
+        }
+        e.target.value = "";
+        return;
+      }
+
+      // STEP 2: If no barcode was detected directly in photo, try OCR backend
+      if (ticker) ticker.textContent = "Reading label text via OCR engine...";
       const formData = new FormData();
-      formData.append("image", e.target.files[0]);
+      formData.append("image", file);
 
       try {
-        const res = await fetch("http://localhost:8000/api/ocr/analyze", {
+        const apiBase = getAppApiBaseUrl();
+        const res = await fetch(`${apiBase}/api/ocr/analyze`, {
           method: "POST",
           body: formData
         });
 
-        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        if (!res.ok) throw new Error(`Backend OCR returned status: ${res.status}`);
         const data = await res.json();
 
         const barcode = data.detected_barcode || "";
@@ -2839,7 +2953,7 @@ document.addEventListener("DOMContentLoaded", () => {
           {
             nutrition: data.extracted_nutrition || {},
             product: {
-              name: data.detected_product_name,
+              name: data.detected_product_name || "Uploaded Product Label",
               category: barcode ? "Barcode Scan" : "OCR Label Scan"
             }
           }
@@ -2850,12 +2964,21 @@ document.addEventListener("DOMContentLoaded", () => {
         persistScanToBackend(dynamicId);
 
       } catch (err) {
-        console.error("OCR API error:", err);
-        if (ticker) ticker.textContent = "Error: " + err.message;
+        console.warn("OCR API error:", err);
+        if (ticker) {
+          ticker.innerHTML = `
+            <div style="color:var(--ink-warn); font-weight:700; margin-bottom:8px;">
+              No barcode detected in photo
+            </div>
+            <div style="font-size:0.75rem; color:var(--ink-muted); margin-bottom:12px;">
+              Make sure the barcode is well-lit and clearly visible, or try our interactive demo products.
+            </div>
+          `;
+        }
         setTimeout(() => {
           closeScannerModal();
           showDashboardPage("consumer-1");
-        }, 2000);
+        }, 2400);
       }
 
       // Reset file input for next scan

@@ -1671,6 +1671,22 @@ function initIndustryScanner() {
   });
 }
 
+function getIndustryApiBaseUrl() {
+  if (typeof window !== "undefined" && window.PackCheckAPI && window.PackCheckAPI.baseURL) {
+    return window.PackCheckAPI.baseURL;
+  }
+  try {
+    const saved = localStorage.getItem("packcheck_api_url");
+    if (saved) return saved.replace(/\/+$/, "");
+  } catch (_) {}
+  if (typeof window !== "undefined" && window.location) {
+    const h = window.location.hostname;
+    if (h === "localhost" || h === "127.0.0.1") return "http://localhost:8000";
+    if (/^192\.168\./.test(h) || /^10\./.test(h) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return `http://${h}:8000`;
+  }
+  return "https://packcheck-backend.onrender.com";
+}
+
 async function processIndustryOcrFile(file) {
   stopInspectorCameraScanner();
 
@@ -1715,12 +1731,13 @@ async function processIndustryOcrFile(file) {
 
   try {
     let ocrData = null;
+    const apiBase = (typeof getIndustryApiBaseUrl === "function") ? getIndustryApiBaseUrl() : "http://localhost:8000";
     if (window.PackCheckAPI && window.PackCheckAPI.analyzeLabel) {
       ocrData = await window.PackCheckAPI.analyzeLabel(file);
     } else {
       const fd = new FormData();
       fd.append("image", file);
-      const res = await fetch("http://localhost:8000/api/ocr/analyze", { method: "POST", body: fd });
+      const res = await fetch(`${apiBase}/api/ocr/analyze`, { method: "POST", body: fd });
       if (res.ok) ocrData = await res.json();
     }
 
@@ -1791,8 +1808,9 @@ async function fetchAndProcessIndustryBarcode(barcode) {
     let scanData = null;
     let jevEvaluation = null;
 
+    const apiBase = getIndustryApiBaseUrl();
     try {
-      const scanRes = await fetch('http://localhost:8000/api/scan', {
+      const scanRes = await fetch(`${apiBase}/api/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barcode: barcode, device_info: 'Industry Regulatory Scanner' })
@@ -1806,8 +1824,8 @@ async function fetchAndProcessIndustryBarcode(barcode) {
     } catch (_) { }
 
     const [analyzeRes, productRes] = await Promise.allSettled([
-      fetch(`http://localhost:8000/api/analyze/${encodeURIComponent(barcode)}`, { method: "POST" }),
-      fetch(`http://localhost:8000/api/products/${encodeURIComponent(barcode)}`)
+      fetch(`${apiBase}/api/analyze/${encodeURIComponent(barcode)}`, { method: "POST" }),
+      fetch(`${apiBase}/api/products/${encodeURIComponent(barcode)}`)
     ]);
 
     if (subTicker) subTicker.textContent = 'Benchmarking nutrients against WHO & ICMR-NIN statutory cutoffs...';
@@ -1884,8 +1902,9 @@ async function enqueueProductByBarcode(barcode) {
 
   try {
     let scanData = null;
+    const apiBase = getIndustryApiBaseUrl();
     try {
-      const res = await fetch('http://localhost:8000/api/scan', {
+      const res = await fetch(`${apiBase}/api/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barcode: barcode, device_info: 'Industry Inspector Quick Queue' })

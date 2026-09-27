@@ -7,11 +7,34 @@
  */
 
 (function (global) {
-  const DEFAULT_BASE_URL = "http://localhost:8000";
+  function resolveBaseURL() {
+    try {
+      const saved = localStorage.getItem("packcheck_api_url");
+      if (saved) return saved.replace(/\/+$/, "");
+    } catch (_) {}
+
+    if (typeof window !== "undefined" && window.PACKCHECK_API_URL) {
+      return window.PACKCHECK_API_URL.replace(/\/+$/, "");
+    }
+
+    if (typeof window !== "undefined" && window.location) {
+      const hostname = window.location.hostname;
+      if (hostname === "localhost" || hostname === "127.0.0.1") {
+        return "http://localhost:8000";
+      }
+      if (/^192\.168\./.test(hostname) || /^10\./.test(hostname) || /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)) {
+        return `http://${hostname}:8000`;
+      }
+    }
+
+    return "https://packcheck-backend.onrender.com";
+  }
+
+  const DEFAULT_BASE_URL = resolveBaseURL();
 
   class PackCheckClient {
-    constructor(baseURL = DEFAULT_BASE_URL) {
-      this.baseURL = baseURL.replace(/\/+$/, "");
+    constructor(baseURL = resolveBaseURL()) {
+      this.baseURL = (baseURL || resolveBaseURL()).replace(/\/+$/, "");
     }
 
     /**
