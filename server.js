@@ -25,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static frontend files directly
 app.use(express.static(path.join(__dirname)));
+app.use(express.static(process.cwd()));
 
 // ============================================================================
 // API ROUTES

@@ -1,0 +1,7 @@
+backend/
+scripts/
+reset-mysql-password.bat
+.git/
+node_modules/
+*.db
+*.sqlite

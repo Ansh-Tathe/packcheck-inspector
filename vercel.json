@@ -1,0 +1,92 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "assets/**",
+          "*.css",
+          "*.js",
+          "*.html",
+          "*.json"
+        ]
+      }
+    },
+    {
+      "src": "assets/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.js",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.mp4",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/style.css",
+      "dest": "/style.css"
+    },
+    {
+      "src": "/responsive.css",
+      "dest": "/responsive.css"
+    },
+    {
+      "src": "/industry.css",
+      "dest": "/industry.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "/app.js"
+    },
+    {
+      "src": "/api.js",
+      "dest": "/api.js"
+    },
+    {
+      "src": "/industry.js",
+      "dest": "/industry.js"
+    },
+    {
+      "src": "/dossier_data.js",
+      "dest": "/dossier_data.js"
+    },
+    {
+      "src": "/industry",
+      "dest": "/industry.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
